@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type Module = Database['public']['Tables']['learning_modules']['Row'];
+type ModuleInsert = Database['public']['Tables']['learning_modules']['Insert'];
 
 interface LearningState {
   modules: Module[];
   loading: boolean;
   initialized: boolean;
   fetchModules: (userId: string) => Promise<void>;
-  addModule: (module: Omit<Module, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'progress' | 'completed_items'>, userId: string) => Promise<void>;
+  addModule: (module: Omit<ModuleInsert, 'user_id'>, userId: string) => Promise<void>;
   updateModule: (id: string, updates: Partial<Module>) => Promise<void>;
   deleteModule: (id: string) => Promise<void>;
   handleRealtimeEvent: (payload: any) => void;
@@ -38,14 +39,16 @@ export const useLearningStore = create<LearningState>((set, get) => ({
   addModule: async (module, userId) => {
     const tempId = `temp-${Date.now()}`;
     const newModule: Module = {
-      ...module,
       id: tempId,
       user_id: userId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      subject: module.subject,
+      module_name: module.module_name,
+      total_items: module.total_items ?? 10,
       completed_items: 0,
       progress: 0,
       notes: module.notes ?? null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     
     set((state) => ({ modules: [...state.modules, newModule] }));

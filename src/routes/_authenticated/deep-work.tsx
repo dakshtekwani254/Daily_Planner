@@ -33,17 +33,32 @@ function DeepWorkPage() {
   React.useEffect(() => {
     if (!running) return;
     intervalRef.current = window.setInterval(() => {
-      setSeconds((s) => {
-        if (s <= 1) {
-          finish(true);
-          return 0;
-        }
-        return s - 1;
-      });
+      setSeconds((s) => s - 1);
     }, 1000);
     return () => { if (intervalRef.current) window.clearInterval(intervalRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running]);
+
+  React.useEffect(() => {
+    if (seconds <= 0 && running) {
+      finish(true);
+    }
+  }, [seconds, running]);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   React.useEffect(() => { if (!running) setSeconds(planned * 60); }, [planned, running]);
 
@@ -95,7 +110,7 @@ function DeepWorkPage() {
   if (fullscreen) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-        <button onClick={() => setFullscreen(false)} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+        <button onClick={toggleFullscreen} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
         <div className="text-sm uppercase tracking-[0.3em] text-muted-foreground">{label}</div>
         <div className="my-6 font-mono text-[14vw] font-semibold tabular-nums leading-none gradient-text">{mm}:{ss}</div>
         <div className="flex items-center gap-3">
@@ -142,7 +157,7 @@ function DeepWorkPage() {
                 <Button size="lg" variant="outline" onClick={pause}><Pause className="mr-2 h-4 w-4" />Pause</Button>
               )}
               {sessionId && <Button size="lg" variant="ghost" onClick={() => finish(false)}><Square className="mr-2 h-4 w-4" />End</Button>}
-              <Button size="lg" variant="ghost" onClick={() => setFullscreen(true)}><Maximize2 className="h-4 w-4" /></Button>
+              <Button size="lg" variant="ghost" onClick={toggleFullscreen}><Maximize2 className="h-4 w-4" /></Button>
             </div>
           </div>
         </section>

@@ -48,6 +48,7 @@ function TasksPage() {
     setActiveId(null);
     if (!e.over) return;
     const targetStatus = String(e.over.id);
+    if (!["todo", "in_progress", "done"].includes(targetStatus)) return;
     const id = String(e.active.id);
     const task = filtered.find((t) => t.id === id);
     if (task && task.status !== targetStatus) {

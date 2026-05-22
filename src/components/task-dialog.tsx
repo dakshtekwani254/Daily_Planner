@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 
 export const TASK_CATEGORIES = [
@@ -36,6 +37,8 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
   const [estimated, setEstimated] = React.useState<string>("");
   const [scheduledFor, setScheduledFor] = React.useState<string>("");
   const [dueDate, setDueDate] = React.useState<string>("");
+  const [isRecurring, setIsRecurring] = React.useState(false);
+  const [recurrenceRule, setRecurrenceRule] = React.useState<string>("");
   const [isPending, setIsPending] = React.useState(false);
 
   React.useEffect(() => {
@@ -44,6 +47,8 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
       setPriority("medium"); setEstimated("");
       setScheduledFor(defaultDate ? toLocalInput(defaultDate) : "");
       setDueDate("");
+      setIsRecurring(false);
+      setRecurrenceRule("");
     }
   }, [open, defaultDate]);
 
@@ -62,6 +67,8 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
         scheduled_for: scheduledFor ? new Date(scheduledFor).toISOString() : null,
         due_date: dueDate ? new Date(dueDate).toISOString() : null,
         status: "todo",
+        is_recurring: isRecurring,
+        recurrence_rule: isRecurring ? recurrenceRule : null,
       }, user.id);
       
       toast.success("Task created");
@@ -127,6 +134,23 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="recurring" checked={isRecurring} onCheckedChange={(c) => setIsRecurring(!!c)} />
+            <Label htmlFor="recurring" className="font-normal text-sm">Make this task recurring</Label>
+          </div>
+          {isRecurring && (
+            <div className="space-y-1.5">
+              <Label>Recurrence Rule</Label>
+              <Select value={recurrenceRule} onValueChange={setRecurrenceRule}>
+                <SelectTrigger><SelectValue placeholder="Select frequency" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FREQ=DAILY">Daily</SelectItem>
+                  <SelectItem value="FREQ=WEEKLY">Weekly</SelectItem>
+                  <SelectItem value="FREQ=MONTHLY">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isPending || !title.trim()}>

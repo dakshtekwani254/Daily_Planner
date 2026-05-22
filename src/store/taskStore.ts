@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
+type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 
 interface TaskState {
   tasks: Task[];
   loading: boolean;
   initialized: boolean;
   fetchTasks: (userId: string) => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'user_id'>, userId: string) => Promise<void>;
+  addTask: (task: Omit<TaskInsert, 'user_id'>, userId: string) => Promise<void>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   handleRealtimeEvent: (payload: any) => void;
@@ -40,21 +41,24 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const newTask: Task = {
-      ...task,
       id: tempId,
       user_id: userId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      actual_minutes: task.actual_minutes ?? null,
+      title: task.title,
+      notes: task.notes ?? null,
+      category: task.category ?? 'Personal',
+      status: task.status ?? 'todo',
+      priority: task.priority ?? 'medium',
       due_date: task.due_date ?? null,
       scheduled_for: task.scheduled_for ?? null,
       estimated_minutes: task.estimated_minutes ?? null,
-      completed_at: task.completed_at ?? null,
-      notes: task.notes ?? null,
-      position: task.position ?? 0,
+      actual_minutes: task.actual_minutes ?? 0,
       tags: task.tags ?? [],
+      completed_at: task.completed_at ?? null,
+      position: task.position ?? 0,
       is_recurring: task.is_recurring ?? false,
       recurrence_rule: task.recurrence_rule ?? null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     
     set((state) => ({ tasks: [newTask, ...state.tasks] }));

@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { getCookie, setCookie, getHeader } from "@tanstack/react-start/server";
+import { getCookie, setCookie, getRequestHeader } from "@tanstack/react-start/server";
 import type { Database } from "./types";
 
 export function createSupabaseServerClient() {
@@ -18,7 +18,7 @@ export function createSupabaseServerClient() {
       cookies: {
         getAll() {
           try {
-            const cookieHeader = getHeader("cookie");
+            const cookieHeader = getRequestHeader("cookie");
             if (!cookieHeader) return [];
             return cookieHeader.split(";").map((c) => {
               const [name, ...rest] = c.split("=");

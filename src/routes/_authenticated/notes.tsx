@@ -38,17 +38,44 @@ function NotesPage() {
 
   const selectedNote = notes.find((n) => n.id === selectedId);
 
+  const previousSelectedId = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (selectedNote) {
+    if (selectedNote && selectedId !== previousSelectedId.current) {
       setEditTitle(selectedNote.title);
       setEditContent(selectedNote.content || "");
       setEditTags((selectedNote.tags || []).join(", "));
-    } else {
+      previousSelectedId.current = selectedId;
+    } else if (!selectedNote) {
       setEditTitle("");
       setEditContent("");
       setEditTags("");
+      previousSelectedId.current = null;
     }
-  }, [selectedNote]);
+  }, [selectedId, selectedNote]);
+
+  // Debounced Autosave
+  React.useEffect(() => {
+    if (!selectedId) return;
+    const timer = setTimeout(() => {
+      // Avoid saving if unchanged (basic check)
+      if (selectedNote && 
+          selectedNote.title === editTitle && 
+          (selectedNote.content || "") === editContent && 
+          (selectedNote.tags || []).join(", ") === editTags) {
+        return;
+      }
+      
+      const tagsArray = editTags.split(",").map(t => t.trim()).filter(Boolean);
+      updateNote(selectedId, {
+        title: editTitle,
+        content: editContent,
+        tags: tagsArray,
+        updated_at: new Date().toISOString()
+      }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [editTitle, editContent, editTags, selectedId, selectedNote, updateNote]);
 
   const handleCreate = async () => {
     if (!user) return;
@@ -57,8 +84,6 @@ function NotesPage() {
         title: "Untitled Note",
         content: "",
         tags: [],
-        folder: "General",
-        is_pinned: false,
       }, user.id);
       setSelectedId(newNote.id);
     } catch (e) {

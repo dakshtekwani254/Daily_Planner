@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type Project = Database['public']['Tables']['projects']['Row'];
+type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
 
 interface ProjectState {
   projects: Project[];
   loading: boolean;
   initialized: boolean;
   fetchProjects: (userId: string) => Promise<void>;
-  addProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'user_id'>, userId: string) => Promise<void>;
+  addProject: (project: Omit<ProjectInsert, 'user_id'>, userId: string) => Promise<void>;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   handleRealtimeEvent: (payload: any) => void;
@@ -37,15 +38,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   addProject: async (project, userId) => {
     const tempId = `temp-${Date.now()}`;
     const newProject: Project = {
-      ...project,
       id: tempId,
       user_id: userId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      name: project.name,
       description: project.description ?? null,
+      stage: project.stage ?? 'Idea',
       github_url: project.github_url ?? null,
       deployment_url: project.deployment_url ?? null,
+      progress: project.progress ?? 0,
+      resume_ready: project.resume_ready ?? false,
       position: project.position ?? 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     
     set((state) => ({ projects: [newProject, ...state.projects] }));

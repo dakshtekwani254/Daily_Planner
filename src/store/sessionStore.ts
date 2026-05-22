@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type FocusSession = Database['public']['Tables']['focus_sessions']['Row'];
+type FocusSessionInsert = Database['public']['Tables']['focus_sessions']['Insert'];
 
 interface SessionState {
   sessions: FocusSession[];
   loading: boolean;
   initialized: boolean;
   fetchSessions: (userId: string) => Promise<void>;
-  addSession: (session: Omit<FocusSession, 'id' | 'started_at' | 'ended_at' | 'actual_seconds' | 'completed' | 'user_id'>, userId: string) => Promise<FocusSession>;
+  addSession: (session: Omit<FocusSessionInsert, 'user_id'>, userId: string) => Promise<FocusSession>;
   updateSession: (id: string, updates: Partial<FocusSession>) => Promise<void>;
   handleRealtimeEvent: (payload: any) => void;
 }
@@ -36,13 +37,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   addSession: async (session, userId) => {
     const tempId = `temp-${Date.now()}`;
     const newSession: FocusSession = {
-      ...session,
       id: tempId,
       user_id: userId,
-      started_at: new Date().toISOString(),
-      ended_at: null,
-      actual_seconds: null,
-      completed: false,
+      task_id: session.task_id ?? null,
+      label: session.label ?? null,
+      planned_minutes: session.planned_minutes ?? 25,
+      actual_seconds: session.actual_seconds ?? 0,
+      distractions: session.distractions ?? 0,
+      started_at: session.started_at ?? new Date().toISOString(),
+      ended_at: session.ended_at ?? null,
+      completed: session.completed ?? false,
     };
     
     set((state) => ({ sessions: [newSession, ...state.sessions] }));

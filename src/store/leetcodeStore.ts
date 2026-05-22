@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type LeetCodeEntry = Database['public']['Tables']['leetcode_entries']['Row'];
+type LeetCodeInsert = Database['public']['Tables']['leetcode_entries']['Insert'];
 
 interface LeetcodeState {
   entries: LeetCodeEntry[];
   loading: boolean;
   initialized: boolean;
   fetchEntries: (userId: string) => Promise<void>;
-  addEntry: (entry: Omit<LeetCodeEntry, 'id' | 'created_at' | 'user_id' | 'needs_revision'>, userId: string) => Promise<void>;
+  addEntry: (entry: Omit<LeetCodeInsert, 'user_id'>, userId: string) => Promise<void>;
   updateEntry: (id: string, updates: Partial<LeetCodeEntry>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
   handleRealtimeEvent: (payload: any) => void;
@@ -37,11 +38,14 @@ export const useLeetcodeStore = create<LeetcodeState>((set, get) => ({
   addEntry: async (entry, userId) => {
     const tempId = `temp-${Date.now()}`;
     const newEntry: LeetCodeEntry = {
-      ...entry,
       id: tempId,
       user_id: userId,
+      problem_name: entry.problem_name,
+      difficulty: entry.difficulty ?? 'Medium',
+      topic: entry.topic ?? 'Arrays',
       created_at: new Date().toISOString(),
-      needs_revision: false,
+      solved_at: entry.solved_at ?? new Date().toISOString().split('T')[0],
+      needs_revision: entry.needs_revision ?? false,
       notes: entry.notes ?? null,
       url: entry.url ?? null,
     };

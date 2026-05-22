@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type Note = Database['public']['Tables']['notes']['Row'];
+type NoteInsert = Database['public']['Tables']['notes']['Insert'];
 
 interface NotesState {
   notes: Note[];
   loading: boolean;
   initialized: boolean;
   fetchNotes: (userId: string) => Promise<void>;
-  addNote: (note: Omit<Note, 'id' | 'created_at' | 'updated_at' | 'user_id'>, userId: string) => Promise<void>;
+  addNote: (note: Omit<NoteInsert, 'user_id'>, userId: string) => Promise<Note>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   handleRealtimeEvent: (payload: any) => void;
@@ -37,13 +38,13 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   addNote: async (note, userId) => {
     const tempId = `temp-${Date.now()}`;
     const newNote: Note = {
-      ...note,
       id: tempId,
       user_id: userId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      title: note.title ?? 'Untitled',
       content: note.content ?? null,
       tags: note.tags ?? [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     
     set((state) => ({ notes: [newNote, ...state.notes] }));
@@ -61,6 +62,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       set((state) => ({
         notes: state.notes.map((n) => (n.id === tempId ? data : n)),
       }));
+      return data;
     }
   },
 
