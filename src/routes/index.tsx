@@ -51,7 +51,7 @@ function Landing() {
             Enter the OS <ArrowRight className="h-4 w-4" />
           </Link>
           <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface/60 px-4 py-3 text-sm text-muted-foreground">
-            Press <span className="kbd">⌘</span><span className="kbd">K</span> anywhere
+            Press <span className="kbd">Ctrl</span><span className="kbd">K</span> anywhere
           </div>
         </div>
 
@@ -77,5 +77,5 @@ const features = [
   { icon: Brain, title: "AI insights", desc: "Smart prioritization, burnout signals and weekly performance reviews." },
   { icon: Clock, title: "Time blocking", desc: "Drag-and-drop hourly planner with recurring tasks and smart reminders." },
   { icon: Zap, title: "Realtime everything", desc: "Tasks, sessions and analytics update instantly across devices." },
-  { icon: Sparkles, title: "Command palette", desc: "⌘K-driven navigation. Capture, create and launch without leaving the keyboard." },
+  { icon: Sparkles, title: "Command palette", desc: "Ctrl+K-driven navigation. Capture, create and launch without leaving the keyboard." },
 ];

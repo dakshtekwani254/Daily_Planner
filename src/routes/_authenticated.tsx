@@ -51,9 +51,13 @@ function AuthenticatedLayout() {
 
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if (e.ctrlKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((o) => !o);
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        setTaskOpen(true);
       }
     };
     window.addEventListener("keydown", handler);
@@ -148,7 +152,7 @@ function AuthenticatedLayout() {
             <Search className="h-4 w-4" />
             <span className="flex-1 text-left">Search or run command…</span>
             <span className="hidden gap-1 md:flex">
-              <span className="kbd">⌘</span><span className="kbd">K</span>
+              <span className="kbd">Ctrl</span><span className="kbd">K</span>
             </span>
           </button>
           <div className="ml-auto flex items-center gap-1">

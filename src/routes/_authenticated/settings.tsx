@@ -90,9 +90,9 @@ function SettingsPage() {
         </Section>
 
         <Section icon={Keyboard} title="Keyboard shortcuts">
-          <Kbd combo="⌘ K" label="Open command palette" />
-          <Kbd combo="N" label="New task (via palette)" />
-          <Kbd combo="⌘ /" label="Toggle sidebar" />
+          <Kbd combo="Ctrl K" label="Open command palette" />
+          <Kbd combo="Ctrl N" label="New task" />
+          <Kbd combo="Ctrl /" label="Toggle sidebar" />
         </Section>
 
         <Section icon={Bell} title="Focus & notifications">

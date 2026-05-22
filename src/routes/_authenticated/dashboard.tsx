@@ -93,7 +93,7 @@ function Dashboard() {
             <Link to="/tasks" className="text-xs text-muted-foreground hover:text-foreground">View all →</Link>
           </div>
           {todays.length === 0 ? (
-            <EmptyHint text="Nothing scheduled. Use ⌘K → New task to capture one." />
+            <EmptyHint text="Nothing scheduled. Use Ctrl + N → New task to capture one." />
           ) : (
             <ul className="divide-y divide-border">
               <AnimatePresence>
