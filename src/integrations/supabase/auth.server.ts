@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
-import { getCookie, setCookie } from "@tanstack/react-start/server";
+import { getCookie, setCookie, getHeader } from "@tanstack/react-start/server";
 import type { Database } from "./types";
 
 export function createSupabaseServerClient() {
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const env = typeof process !== "undefined" ? process.env : (import.meta as any).env || {};
+  const SUPABASE_URL = env.VITE_SUPABASE_URL || env.SUPABASE_URL || (import.meta as any).env?.VITE_SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_PUBLISHABLE_KEY || (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     throw new Error("Missing Supabase environment variables for Server Client.");
@@ -17,10 +18,15 @@ export function createSupabaseServerClient() {
       cookies: {
         getAll() {
           try {
-	    return [];
-	  } catch {
-  	    return [];
-	  }
+            const cookieHeader = getHeader("cookie");
+            if (!cookieHeader) return [];
+            return cookieHeader.split(";").map((c) => {
+              const [name, ...rest] = c.split("=");
+              return { name: name.trim(), value: rest.join("=").trim() };
+            }).filter((c) => c.name);
+          } catch {
+            return [];
+          }
         },
         get(name: string) {
           try {
