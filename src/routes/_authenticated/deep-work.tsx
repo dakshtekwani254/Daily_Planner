@@ -61,7 +61,7 @@ function DeepWorkPage() {
     }
   };
 
-  React.useEffect(() => { if (!running) setSeconds(planned * 60); }, [planned, running]);
+  React.useEffect(() => { if (!sessionId) setSeconds(planned * 60); }, [planned, sessionId]);
 
   const start = async () => {
     if (!user) return;
@@ -87,7 +87,7 @@ function DeepWorkPage() {
       try {
         await updateSession(sessionId, {
           ended_at: new Date().toISOString(),
-          actual_seconds: actualSeconds > 0 ? actualSeconds : planned * 60,
+          actual_seconds: Math.max(0, actualSeconds),
           completed,
         });
       } catch (e) {
