@@ -97,8 +97,8 @@ function TasksPage() {
               </button>
             ))}
           </div>
-          <Button variant="outline" size="icon" onClick={() => setCategoriesOpen(true)}>
-            <Settings2 className="h-4 w-4" />
+          <Button variant="outline" onClick={() => setCategoriesOpen(true)} className="gap-1.5">
+            <Settings2 className="h-4 w-4" />Categories
           </Button>
           <Button onClick={() => setOpen(true)} className="gap-1.5"><Plus className="h-4 w-4" />New task</Button>
         </div>

@@ -14,7 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 export const TASK_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 
@@ -32,12 +32,13 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
   const allCategories = React.useMemo(() => {
     const cats = new Set([...customCategories.map(c => c.name)]);
     tasks.forEach(t => cats.add(t.category));
-    return Array.from(cats);
+    return Array.from(cats).filter(c => c && c.trim() !== "");
   }, [tasks, customCategories]);
 
   const [title, setTitle] = React.useState("");
   const [notes, setNotes] = React.useState("");
   const [category, setCategory] = React.useState<string>("");
+  const [isCreatingCategory, setIsCreatingCategory] = React.useState(false);
   const [priority, setPriority] = React.useState<string>("medium");
   const [estimated, setEstimated] = React.useState<string>("");
   const [scheduledFor, setScheduledFor] = React.useState<string>("");
@@ -49,6 +50,7 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
   React.useEffect(() => {
     if (open) {
       setTitle(""); setNotes(""); setCategory(allCategories[0] || "");
+      setIsCreatingCategory(false);
       setPriority("medium"); setEstimated("");
       setScheduledFor(defaultDate ? toLocalInput(defaultDate) : "");
       setDueDate("");
@@ -104,12 +106,37 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {allCategories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {isCreatingCategory ? (
+                <div className="flex gap-2">
+                  <Input 
+                    value={category} 
+                    onChange={(e) => setCategory(e.target.value)} 
+                    placeholder="New category..." 
+                    autoFocus 
+                  />
+                  <Button type="button" variant="ghost" size="icon" onClick={() => {
+                    setIsCreatingCategory(false);
+                    setCategory(allCategories[0] || "");
+                  }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Select value={category || undefined} onValueChange={(v) => {
+                  if (v === "__create_new__") {
+                    setCategory("");
+                    setIsCreatingCategory(true);
+                  } else {
+                    setCategory(v);
+                  }
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                  <SelectContent>
+                    {allCategories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    <SelectItem value="__create_new__" className="text-primary font-medium">+ New category</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Priority</Label>
