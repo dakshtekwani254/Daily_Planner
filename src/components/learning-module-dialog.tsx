@@ -1,30 +1,49 @@
 import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLearningStore } from "@/store/learningStore";
+import { useSubjectStore } from "@/store/subjectStore";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-export const SUBJECTS = ["Computer Networks", "DSA", "Mathematics", "Data Science", "AI/ML"] as const;
+interface Props {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}
 
-export function LearningModuleDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function LearningModuleDialog({ open, onOpenChange }: Props) {
   const { user } = useAuth();
-  const { addModule } = useLearningStore();
-  const [subject, setSubject] = React.useState<string>(SUBJECTS[0]);
+  const { modules, addModule } = useLearningStore();
+  const { subjects: customSubjects } = useSubjectStore();
+  
+  const existingSubjects = React.useMemo(() => {
+    const subs = new Set([...customSubjects.map(s => s.name)]);
+    modules.forEach((m) => subs.add(m.subject));
+    return Array.from(subs);
+  }, [modules, customSubjects]);
+  
+  const [subject, setSubject] = React.useState<string>("");
   const [name, setName] = React.useState("");
-  const [total, setTotal] = React.useState(10);
+  const [total, setTotal] = React.useState<number | "">(10);
   const [isPending, setIsPending] = React.useState(false);
 
-  React.useEffect(() => { if (open) { setName(""); setTotal(10); setSubject(SUBJECTS[0]); } }, [open]);
+  React.useEffect(() => {
+    if (open) {
+      setSubject(existingSubjects[0] || "");
+      setName("");
+      setTotal("");
+    }
+  }, [open, existingSubjects]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !user) return;
+    if (!name.trim() || !user || !subject) return;
     
     setIsPending(true);
     try {
@@ -49,9 +68,10 @@ export function LearningModuleDialog({ open, onOpenChange }: { open: boolean; on
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1.5">
             <Label>Subject</Label>
-            <select value={subject} onChange={(e) => setSubject(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <Input list="subjects-list" value={subject} onChange={(e) => setSubject(e.target.value)} required placeholder="Select or type new subject" />
+            <datalist id="subjects-list">
+              {existingSubjects.map((s) => <option key={s} value={s} />)}
+            </datalist>
           </div>
           <div className="space-y-1.5"><Label>Module name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required autoFocus /></div>
           <div className="space-y-1.5"><Label>Total items</Label><Input type="number" min="1" value={total} onChange={(e) => setTotal(Number(e.target.value))} /></div>

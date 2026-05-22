@@ -36,19 +36,6 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   addNote: async (note, userId) => {
-    const tempId = `temp-${Date.now()}`;
-    const newNote: Note = {
-      id: tempId,
-      user_id: userId,
-      title: note.title ?? 'Untitled',
-      content: note.content ?? null,
-      tags: note.tags ?? [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    set((state) => ({ notes: [newNote, ...state.notes] }));
-
     const { data, error } = await supabase
       .from('notes')
       .insert({ ...note, user_id: userId })
@@ -56,12 +43,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       .single();
 
     if (error) {
-      set((state) => ({ notes: state.notes.filter((n) => n.id !== tempId) }));
       throw error;
     } else {
-      set((state) => ({
-        notes: state.notes.map((n) => (n.id === tempId ? data : n)),
-      }));
+      set((state) => {
+        if (state.notes.find((n) => n.id === data.id)) return state;
+        return { notes: [data, ...state.notes] };
+      });
       return data;
     }
   },

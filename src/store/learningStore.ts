@@ -37,35 +37,25 @@ export const useLearningStore = create<LearningState>((set, get) => ({
   },
 
   addModule: async (module, userId) => {
-    const tempId = `temp-${Date.now()}`;
-    const newModule: Module = {
-      id: tempId,
-      user_id: userId,
-      subject: module.subject,
-      module_name: module.module_name,
-      total_items: module.total_items ?? 10,
-      completed_items: 0,
-      progress: 0,
-      notes: module.notes ?? null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    set((state) => ({ modules: [...state.modules, newModule] }));
-
     const { data, error } = await supabase
       .from('learning_modules')
-      .insert({ ...module, user_id: userId, completed_items: 0, progress: 0 })
+      .insert({
+        ...module,
+        user_id: userId,
+        completed_items: 0,
+        progress: 0,
+        total_items: module.total_items ?? 10
+      })
       .select()
       .single();
 
     if (error) {
-      set((state) => ({ modules: state.modules.filter((m) => m.id !== tempId) }));
       throw error;
     } else {
-      set((state) => ({
-        modules: state.modules.map((m) => (m.id === tempId ? data : m)),
-      }));
+      set((state) => {
+        if (state.modules.find((m) => m.id === data.id)) return state;
+        return { modules: [...state.modules, data] };
+      });
     }
   },
 

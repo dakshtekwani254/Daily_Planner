@@ -23,6 +23,7 @@ function DeepWorkPage() {
   const [sessionId, setSessionId] = React.useState<string | null>(null);
   const [fullscreen, setFullscreen] = React.useState(false);
   const intervalRef = React.useRef<number | null>(null);
+  const fullscreenRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (user && !initialized) {
@@ -53,9 +54,9 @@ function DeepWorkPage() {
   }, []);
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
+    if (!document.fullscreenElement && fullscreenRef.current) {
+      fullscreenRef.current.requestFullscreen().catch(() => {});
+    } else if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
   };
@@ -107,24 +108,6 @@ function DeepWorkPage() {
     .reduce((a, s) => a + (s.actual_seconds ?? 0), 0);
   const completedCount = sessions.filter((s) => s.completed).length;
 
-  if (fullscreen) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-        <button onClick={toggleFullscreen} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
-        <div className="text-sm uppercase tracking-[0.3em] text-muted-foreground">{label}</div>
-        <div className="my-6 font-mono text-[14vw] font-semibold tabular-nums leading-none gradient-text">{mm}:{ss}</div>
-        <div className="flex items-center gap-3">
-          {!running ? (
-            <Button size="lg" onClick={sessionId ? resume : start}><Play className="mr-2 h-4 w-4" />{sessionId ? "Resume" : "Start"}</Button>
-          ) : (
-            <Button size="lg" variant="outline" onClick={pause}><Pause className="mr-2 h-4 w-4" />Pause</Button>
-          )}
-          {sessionId && <Button size="lg" variant="ghost" onClick={() => finish(false)}><Square className="mr-2 h-4 w-4" />End</Button>}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <header className="mb-6">
@@ -133,22 +116,34 @@ function DeepWorkPage() {
       </header>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="card-elevated relative overflow-hidden p-8 lg:col-span-2">
+        <section ref={fullscreenRef} className={`card-elevated relative overflow-hidden p-8 lg:col-span-2 ${fullscreen ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background' : ''}`}>
           <div className="absolute inset-0 -z-0 bg-[radial-gradient(ellipse_at_center,oklch(0.72_0.16_250/0.15),transparent_60%)]" />
-          <div className="relative z-10 flex flex-col items-center">
+          
+          {fullscreen && (
+            <button onClick={toggleFullscreen} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground z-20">
+              <X className="h-5 w-5" />
+            </button>
+          )}
+
+          <div className="relative z-10 flex flex-col items-center w-full">
             <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{running ? "In flow" : "Ready"}</div>
-            <div className="my-2 font-mono text-7xl font-semibold tabular-nums gradient-text md:text-8xl">{mm}:{ss}</div>
-            <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-surface-2">
-              <div className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000" style={{ width: `${progress * 100}%` }} />
-            </div>
+            <div className={`my-2 font-mono font-semibold tabular-nums gradient-text ${fullscreen ? 'text-[14vw] leading-none my-6' : 'text-7xl md:text-8xl'}`}>{mm}:{ss}</div>
+            
+            {!fullscreen && (
+              <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-surface-2">
+                <div className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000" style={{ width: `${progress * 100}%` }} />
+              </div>
+            )}
 
-            <div className="mt-6 flex items-center gap-2">
-              <Button size="icon" variant="outline" disabled={running} onClick={() => setPlanned(Math.max(5, planned - 5))}><Minus className="h-4 w-4" /></Button>
-              <span className="w-20 text-center text-sm text-muted-foreground tabular-nums">{planned} min</span>
-              <Button size="icon" variant="outline" disabled={running} onClick={() => setPlanned(Math.min(120, planned + 5))}><Plus className="h-4 w-4" /></Button>
-            </div>
+            {!fullscreen && (
+              <div className="mt-6 flex items-center gap-2">
+                <Button size="icon" variant="outline" disabled={running} onClick={() => setPlanned(Math.max(5, planned - 5))}><Minus className="h-4 w-4" /></Button>
+                <span className="w-20 text-center text-sm text-muted-foreground tabular-nums">{planned} min</span>
+                <Button size="icon" variant="outline" disabled={running} onClick={() => setPlanned(Math.min(120, planned + 5))}><Plus className="h-4 w-4" /></Button>
+              </div>
+            )}
 
-            <Input value={label} onChange={(e) => setLabel(e.target.value)} className="mt-4 max-w-xs text-center" placeholder="Session label" />
+            {!fullscreen && <Input value={label} onChange={(e) => setLabel(e.target.value)} className="mt-4 max-w-xs text-center" placeholder="Session label" />}
 
             <div className="mt-6 flex items-center gap-2">
               {!running ? (
@@ -157,7 +152,7 @@ function DeepWorkPage() {
                 <Button size="lg" variant="outline" onClick={pause}><Pause className="mr-2 h-4 w-4" />Pause</Button>
               )}
               {sessionId && <Button size="lg" variant="ghost" onClick={() => finish(false)}><Square className="mr-2 h-4 w-4" />End</Button>}
-              <Button size="lg" variant="ghost" onClick={toggleFullscreen}><Maximize2 className="h-4 w-4" /></Button>
+              {!fullscreen && <Button size="lg" variant="ghost" onClick={toggleFullscreen}><Maximize2 className="h-4 w-4" /></Button>}
             </div>
           </div>
         </section>

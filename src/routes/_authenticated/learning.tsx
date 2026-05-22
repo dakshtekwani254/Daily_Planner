@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLearningStore } from "@/store/learningStore";
+import { useSubjectStore } from "@/store/subjectStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,9 @@ import {
 import { Plus, Trash2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { LearningModuleDialog, SUBJECTS } from "@/components/learning-module-dialog";
+import { LearningModuleDialog } from "@/components/learning-module-dialog";
+import { SubjectDialog } from "@/components/subject-dialog";
+import { Settings2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/learning")({
   component: LearningPage,
@@ -19,14 +22,15 @@ export const Route = createFileRoute("/_authenticated/learning")({
 
 function LearningPage() {
   const { user } = useAuth();
-  const { modules, initialized, fetchModules, updateModule, deleteModule } = useLearningStore();
+  const { modules, initialized: modulesInit, fetchModules, updateModule, deleteModule } = useLearningStore();
+  const { subjects, initialized: subjectsInit, fetchSubjects } = useSubjectStore();
   const [open, setOpen] = React.useState(false);
+  const [subjectsOpen, setSubjectsOpen] = React.useState(false);
 
   React.useEffect(() => {
-    if (user && !initialized) {
-      fetchModules(user.id);
-    }
-  }, [user, initialized, fetchModules]);
+    if (user && !modulesInit) fetchModules(user.id);
+    if (user && !subjectsInit) fetchSubjects(user.id);
+  }, [user, modulesInit, subjectsInit, fetchModules, fetchSubjects]);
 
   const handleUpdate = async (id: string, completed_items: number, total_items: number) => {
     try {
@@ -45,10 +49,15 @@ function LearningPage() {
     }
   };
 
-  const bySubject = SUBJECTS.map((s) => ({
+  const uniqueSubjects = Array.from(new Set([
+    ...subjects.map(s => s.name),
+    ...modules.map(m => m.subject)
+  ]));
+
+  const bySubject = uniqueSubjects.map((s) => ({
     subject: s,
     items: modules.filter((m) => m.subject === s),
-  }));
+  })).filter(s => s.items.length > 0 || subjects.some(sub => sub.name === s.subject));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -57,7 +66,10 @@ function LearningPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Learning</h1>
           <p className="text-sm text-muted-foreground">Track mastery across your subjects.</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Add module</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setSubjectsOpen(true)}><Settings2 className="mr-1.5 h-4 w-4" />Manage subjects</Button>
+          <Button onClick={() => setOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Add module</Button>
+        </div>
       </header>
 
       <div className="space-y-6">
@@ -107,6 +119,7 @@ function LearningPage() {
       </div>
 
       <LearningModuleDialog open={open} onOpenChange={setOpen} />
+      <SubjectDialog open={subjectsOpen} onOpenChange={setSubjectsOpen} />
     </div>
   );
 }

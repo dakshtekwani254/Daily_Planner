@@ -43,7 +43,7 @@ $$;
 CREATE TABLE IF NOT EXISTS public.settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE UNIQUE,
-  theme TEXT NOT NULL DEFAULT 'system', -- light, dark, system
+  theme TEXT NOT NULL DEFAULT 'system',
   pomodoro_duration INT NOT NULL DEFAULT 25,
   short_break_duration INT NOT NULL DEFAULT 5,
   long_break_duration INT NOT NULL DEFAULT 15,
@@ -76,8 +76,8 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   title TEXT NOT NULL,
   notes TEXT,
   category TEXT NOT NULL DEFAULT 'Personal',
-  status TEXT NOT NULL DEFAULT 'todo', -- todo, in_progress, done, archived
-  priority TEXT NOT NULL DEFAULT 'medium', -- low, medium, high, urgent
+  status TEXT NOT NULL DEFAULT 'todo',
+  priority TEXT NOT NULL DEFAULT 'medium',
   due_date TIMESTAMPTZ,
   scheduled_for TIMESTAMPTZ,
   estimated_minutes INT,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   completed_at TIMESTAMPTZ,
   position INT DEFAULT 0,
   is_recurring BOOLEAN NOT NULL DEFAULT false,
-  recurrence_rule TEXT, -- e.g., 'FREQ=DAILY'
+  recurrence_rule TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -95,6 +95,17 @@ CREATE POLICY "tasks_all_own" ON public.tasks FOR ALL USING (auth.uid() = user_i
 CREATE INDEX IF NOT EXISTS tasks_user_idx ON public.tasks(user_id);
 CREATE INDEX IF NOT EXISTS tasks_scheduled_idx ON public.tasks(user_id, scheduled_for);
 CREATE TRIGGER tasks_touch BEFORE UPDATE ON public.tasks FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
+
+-- 3.5 TASK CATEGORIES
+CREATE TABLE IF NOT EXISTS public.task_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE public.task_categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "task_categories_all_own" ON public.task_categories FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS task_categories_name_user_idx ON public.task_categories(user_id, name);
 
 -- 4. SUBTASKS
 CREATE TABLE IF NOT EXISTS public.subtasks (
@@ -115,9 +126,10 @@ CREATE TABLE IF NOT EXISTS public.projects (
   user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
-  stage TEXT NOT NULL DEFAULT 'Idea', -- Idea, Planning, Development, Testing, Deployment, Completed
+  stage TEXT NOT NULL DEFAULT 'Idea',
   github_url TEXT,
   deployment_url TEXT,
+  tasks JSONB DEFAULT '[]'::jsonb,
   progress INT NOT NULL DEFAULT 0,
   resume_ready BOOLEAN NOT NULL DEFAULT false,
   position INT DEFAULT 0,
@@ -150,7 +162,7 @@ CREATE TABLE IF NOT EXISTS public.leetcode_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
   problem_name TEXT NOT NULL,
-  difficulty TEXT NOT NULL DEFAULT 'Medium', -- Easy, Medium, Hard
+  difficulty TEXT NOT NULL DEFAULT 'Medium',
   topic TEXT NOT NULL DEFAULT 'Arrays',
   url TEXT,
   notes TEXT,
@@ -162,7 +174,18 @@ ALTER TABLE public.leetcode_entries ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "leet_all_own" ON public.leetcode_entries FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS leet_user_date_idx ON public.leetcode_entries(user_id, solved_at DESC);
 
--- 8. LEARNING MODULES
+-- 8. SUBJECTS
+CREATE TABLE IF NOT EXISTS public.subjects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "subjects_all_own" ON public.subjects FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS subjects_name_user_idx ON public.subjects(user_id, name);
+
+-- 9. LEARNING MODULES
 CREATE TABLE IF NOT EXISTS public.learning_modules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
@@ -179,7 +202,7 @@ ALTER TABLE public.learning_modules ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "learn_all_own" ON public.learning_modules FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE TRIGGER learn_touch BEFORE UPDATE ON public.learning_modules FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
--- 9. NOTES
+-- 10. NOTES
 CREATE TABLE IF NOT EXISTS public.notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
@@ -193,7 +216,7 @@ ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "notes_all_own" ON public.notes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE TRIGGER notes_touch BEFORE UPDATE ON public.notes FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
--- 10. ANALYTICS (Daily summaries)
+-- 11. ANALYTICS (Daily summaries)
 CREATE TABLE IF NOT EXISTS public.analytics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
@@ -233,6 +256,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.leetcode_entries;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notes;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.analytics;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.settings;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.learning_modules;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.subjects;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.task_categories;
 
 ALTER TABLE public.tasks REPLICA IDENTITY FULL;
 ALTER TABLE public.projects REPLICA IDENTITY FULL;
@@ -241,3 +267,6 @@ ALTER TABLE public.leetcode_entries REPLICA IDENTITY FULL;
 ALTER TABLE public.notes REPLICA IDENTITY FULL;
 ALTER TABLE public.analytics REPLICA IDENTITY FULL;
 ALTER TABLE public.settings REPLICA IDENTITY FULL;
+ALTER TABLE public.learning_modules REPLICA IDENTITY FULL;
+ALTER TABLE public.subjects REPLICA IDENTITY FULL;
+ALTER TABLE public.task_categories REPLICA IDENTITY FULL;

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTaskStore } from "@/store/taskStore";
+import { useTaskCategoryStore } from "@/store/taskCategoryStore";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -15,10 +16,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 
-export const TASK_CATEGORIES = [
-  "LeetCode", "Projects", "Internship", "Data Science Course",
-  "Revision", "Academics", "Personal",
-] as const;
 export const TASK_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 
 type Props = {
@@ -29,10 +26,18 @@ type Props = {
 
 export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
   const { user } = useAuth();
-  const { addTask } = useTaskStore();
+  const { addTask, tasks } = useTaskStore();
+  const { categories: customCategories } = useTaskCategoryStore();
+  
+  const allCategories = React.useMemo(() => {
+    const cats = new Set([...customCategories.map(c => c.name)]);
+    tasks.forEach(t => cats.add(t.category));
+    return Array.from(cats);
+  }, [tasks, customCategories]);
+
   const [title, setTitle] = React.useState("");
   const [notes, setNotes] = React.useState("");
-  const [category, setCategory] = React.useState<string>("Personal");
+  const [category, setCategory] = React.useState<string>("");
   const [priority, setPriority] = React.useState<string>("medium");
   const [estimated, setEstimated] = React.useState<string>("");
   const [scheduledFor, setScheduledFor] = React.useState<string>("");
@@ -43,14 +48,14 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
 
   React.useEffect(() => {
     if (open) {
-      setTitle(""); setNotes(""); setCategory("Personal");
+      setTitle(""); setNotes(""); setCategory(allCategories[0] || "");
       setPriority("medium"); setEstimated("");
       setScheduledFor(defaultDate ? toLocalInput(defaultDate) : "");
       setDueDate("");
       setIsRecurring(false);
       setRecurrenceRule("");
     }
-  }, [open, defaultDate]);
+  }, [open, defaultDate, allCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +107,7 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {TASK_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {allCategories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

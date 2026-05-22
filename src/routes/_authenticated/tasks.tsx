@@ -3,8 +3,10 @@ import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTaskStore } from "@/store/taskStore";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, MoreHorizontal } from "lucide-react";
-import { TaskDialog, TASK_CATEGORIES } from "@/components/task-dialog";
+import { Plus, Trash2, MoreHorizontal, Settings2 } from "lucide-react";
+import { TaskDialog } from "@/components/task-dialog";
+import { TaskCategoryDialog } from "@/components/task-category-dialog";
+import { useTaskCategoryStore } from "@/store/taskCategoryStore";
 import {
   DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors,
   useDraggable, useDroppable, DragOverlay,
@@ -28,17 +30,24 @@ const COLUMNS = [
 
 function TasksPage() {
   const { user } = useAuth();
-  const { tasks, initialized, fetchTasks, updateTask, deleteTask } = useTaskStore();
+  const { tasks, initialized: tasksInit, fetchTasks, updateTask, deleteTask } = useTaskStore();
+  const { categories, initialized: categoriesInit, fetchCategories } = useTaskCategoryStore();
   const [open, setOpen] = React.useState(false);
+  const [categoriesOpen, setCategoriesOpen] = React.useState(false);
   const [filter, setFilter] = React.useState<string>("All");
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   React.useEffect(() => {
-    if (user && !initialized) {
-      fetchTasks(user.id);
-    }
-  }, [user, initialized, fetchTasks]);
+    if (user && !tasksInit) fetchTasks(user.id);
+    if (user && !categoriesInit) fetchCategories(user.id);
+  }, [user, tasksInit, categoriesInit, fetchTasks, fetchCategories]);
+
+  const allCategories = React.useMemo(() => {
+    const cats = new Set([...categories.map(c => c.name)]);
+    tasks.forEach(t => cats.add(t.category));
+    return Array.from(cats);
+  }, [tasks, categories]);
 
   const filtered = tasks.filter((t) => filter === "All" || t.category === filter);
   const grouped = COLUMNS.map((c) => ({ ...c, items: filtered.filter((t) => t.status === c.id) }));
@@ -81,13 +90,16 @@ function TasksPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-surface p-1">
-            {(["All", ...TASK_CATEGORIES] as const).map((c) => (
+            {(["All", ...allCategories] as const).map((c) => (
               <button key={c} onClick={() => setFilter(c)}
                 className={`rounded px-2 py-1 text-xs transition-colors ${filter === c ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
                 {c}
               </button>
             ))}
           </div>
+          <Button variant="outline" size="icon" onClick={() => setCategoriesOpen(true)}>
+            <Settings2 className="h-4 w-4" />
+          </Button>
           <Button onClick={() => setOpen(true)} className="gap-1.5"><Plus className="h-4 w-4" />New task</Button>
         </div>
       </header>
@@ -115,6 +127,7 @@ function TasksPage() {
       </DndContext>
 
       <TaskDialog open={open} onOpenChange={setOpen} />
+      <TaskCategoryDialog open={categoriesOpen} onOpenChange={setCategoriesOpen} />
     </div>
   );
 }

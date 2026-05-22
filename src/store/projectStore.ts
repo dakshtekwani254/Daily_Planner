@@ -36,37 +36,26 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   addProject: async (project, userId) => {
-    const tempId = `temp-${Date.now()}`;
-    const newProject: Project = {
-      id: tempId,
-      user_id: userId,
-      name: project.name,
-      description: project.description ?? null,
-      stage: project.stage ?? 'Idea',
-      github_url: project.github_url ?? null,
-      deployment_url: project.deployment_url ?? null,
-      progress: project.progress ?? 0,
-      resume_ready: project.resume_ready ?? false,
-      position: project.position ?? 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    set((state) => ({ projects: [newProject, ...state.projects] }));
-
     const { data, error } = await supabase
       .from('projects')
-      .insert({ ...project, user_id: userId })
+      .insert({
+        ...project,
+        user_id: userId,
+        progress: project.progress ?? 0,
+        resume_ready: project.resume_ready ?? false,
+        stage: project.stage ?? 'Idea',
+        position: project.position ?? 0
+      })
       .select()
       .single();
 
     if (error) {
-      set((state) => ({ projects: state.projects.filter((p) => p.id !== tempId) }));
       throw error;
     } else {
-      set((state) => ({
-        projects: state.projects.map((p) => (p.id === tempId ? data : p)),
-      }));
+      set((state) => {
+        if (state.projects.find((p) => p.id === data.id)) return state;
+        return { projects: [data, ...state.projects] };
+      });
     }
   },
 

@@ -12,8 +12,9 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Github, ExternalLink, Trash2, Award } from "lucide-react";
+import { Plus, Github, ExternalLink, Trash2, Award, Edit2 } from "lucide-react";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProjectDialog, PROJECT_STAGES as STAGES } from "@/components/project-dialog";
 
@@ -25,6 +26,17 @@ function ProjectsPage() {
   const { user } = useAuth();
   const { projects, initialized, fetchProjects, updateProject, deleteProject } = useProjectStore();
   const [open, setOpen] = React.useState(false);
+  const [projectToEdit, setProjectToEdit] = React.useState<Database["public"]["Tables"]["projects"]["Row"] | null>(null);
+
+  const openNew = () => {
+    setProjectToEdit(null);
+    setOpen(true);
+  };
+
+  const openEdit = (p: Database["public"]["Tables"]["projects"]["Row"]) => {
+    setProjectToEdit(p);
+    setOpen(true);
+  };
 
   React.useEffect(() => {
     if (user && !initialized) {
@@ -58,7 +70,7 @@ function ProjectsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
           <p className="text-sm text-muted-foreground">From idea to deployed.</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="mr-1.5 h-4 w-4" />New project</Button>
+        <Button onClick={openNew}><Plus className="mr-1.5 h-4 w-4" />New project</Button>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -85,7 +97,10 @@ function ProjectsPage() {
                         <div className="text-sm font-medium leading-snug">{p.name}</div>
                         {p.description && <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.description}</div>}
                       </div>
-                      <button onClick={() => handleDelete(p.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-foreground"><Edit2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => handleDelete(p.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
                     </div>
                     <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-2">
                       <div className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500" style={{ width: `${p.progress}%` }} />
@@ -110,7 +125,7 @@ function ProjectsPage() {
         ))}
       </div>
 
-      <ProjectDialog open={open} onOpenChange={setOpen} />
+      <ProjectDialog open={open} onOpenChange={setOpen} projectToEdit={projectToEdit} />
     </div>
   );
 }

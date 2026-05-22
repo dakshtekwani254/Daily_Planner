@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { addDays, addWeeks, addMonths } from 'date-fns';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
@@ -38,52 +39,34 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   addTask: async (task, userId) => {
-    // Optimistic update
-    const tempId = `temp-${Date.now()}`;
-    const newTask: Task = {
-      id: tempId,
-      user_id: userId,
-      title: task.title,
-      notes: task.notes ?? null,
-      category: task.category ?? 'Personal',
-      status: task.status ?? 'todo',
-      priority: task.priority ?? 'medium',
-      due_date: task.due_date ?? null,
-      scheduled_for: task.scheduled_for ?? null,
-      estimated_minutes: task.estimated_minutes ?? null,
-      actual_minutes: task.actual_minutes ?? 0,
-      tags: task.tags ?? [],
-      completed_at: task.completed_at ?? null,
-      position: task.position ?? 0,
-      is_recurring: task.is_recurring ?? false,
-      recurrence_rule: task.recurrence_rule ?? null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    set((state) => ({ tasks: [newTask, ...state.tasks] }));
-
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ ...task, user_id: userId })
+      .insert({
+        ...task,
+        user_id: userId,
+        is_recurring: task.is_recurring ?? false,
+        actual_minutes: task.actual_minutes ?? 0,
+        position: task.position ?? 0
+      })
       .select()
       .single();
 
     if (error) {
-      // Revert optimistic update
-      set((state) => ({ tasks: state.tasks.filter((t) => t.id !== tempId) }));
       throw error;
     } else {
-      // Replace temp with real
-      set((state) => ({
-        tasks: state.tasks.map((t) => (t.id === tempId ? data : t)),
-      }));
+      set((state) => {
+        // Prevent duplication if realtime already inserted it
+        if (state.tasks.find((t) => t.id === data.id)) return state;
+        return { tasks: [data, ...state.tasks] };
+      });
     }
   },
 
   updateTask: async (id, updates) => {
     const prevTasks = get().tasks;
-    // Optimistic update
+    const task = prevTasks.find(t => t.id === id);
+    if (!task) return;
+
     set((state) => ({
       tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
     }));
@@ -94,9 +77,44 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       .eq('id', id);
 
     if (error) {
-      // Revert
       set({ tasks: prevTasks });
       throw error;
+    }
+
+    // Recurring logic
+    if (updates.status === 'done' && task.status !== 'done' && task.is_recurring && task.recurrence_rule) {
+      let nextDate = new Date();
+      if (task.due_date) nextDate = new Date(task.due_date);
+      else if (task.scheduled_for) nextDate = new Date(task.scheduled_for);
+
+      if (task.recurrence_rule === 'FREQ=DAILY') nextDate = addDays(nextDate, 1);
+      else if (task.recurrence_rule === 'FREQ=WEEKLY') nextDate = addWeeks(nextDate, 1);
+      else if (task.recurrence_rule === 'FREQ=MONTHLY') nextDate = addMonths(nextDate, 1);
+      else nextDate = addDays(nextDate, 1);
+
+      const nextTask = {
+        title: task.title,
+        notes: task.notes,
+        category: task.category,
+        status: 'todo',
+        priority: task.priority,
+        estimated_minutes: task.estimated_minutes,
+        tags: task.tags,
+        position: task.position,
+        is_recurring: true,
+        recurrence_rule: task.recurrence_rule,
+        user_id: task.user_id,
+        scheduled_for: task.scheduled_for ? nextDate.toISOString() : null,
+        due_date: task.due_date ? nextDate.toISOString() : null,
+      };
+
+      const { data: newRec } = await supabase.from('tasks').insert(nextTask).select().single();
+      if (newRec) {
+        set((state) => {
+          if (state.tasks.find(t => t.id === newRec.id)) return state;
+          return { tasks: [newRec, ...state.tasks] };
+        });
+      }
     }
   },
 

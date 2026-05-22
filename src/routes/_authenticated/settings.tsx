@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Keyboard, Bell, User, Palette } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LogOut, Keyboard, Bell, User, Palette, Check, X, Edit2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -9,6 +13,33 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const { user, signOut } = useAuth();
+
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [nameInput, setNameInput] = React.useState(user?.user_metadata?.full_name || "");
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: nameInput.trim() }
+      });
+      if (error) throw error;
+      
+      // Update profile table as well to keep it in sync
+      if (user?.id) {
+        await supabase.from('profiles').update({ display_name: nameInput.trim() }).eq('id', user.id);
+      }
+      
+      toast.success("Name updated successfully");
+      setIsEditing(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update name");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -19,7 +50,33 @@ function SettingsPage() {
 
       <div className="space-y-4">
         <Section icon={User} title="Account">
-          <Row label="Name" value={user?.user_metadata?.full_name || "—"} />
+          <div className="flex items-center justify-between gap-3 border-b border-border py-2 last:border-0">
+            <span className="text-sm text-muted-foreground w-20">Name</span>
+            {isEditing ? (
+              <div className="flex flex-1 items-center gap-2">
+                <Input 
+                  className="h-8 text-sm" 
+                  value={nameInput} 
+                  onChange={(e) => setNameInput(e.target.value)} 
+                  autoFocus 
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                />
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-primary" onClick={handleSaveName} disabled={isSaving || !nameInput.trim()}>
+                  <Check className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center justify-between">
+                <span className="text-sm">{user?.user_metadata?.full_name || "—"}</span>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setNameInput(user?.user_metadata?.full_name || ""); setIsEditing(true); }}>
+                  <Edit2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
           <Row label="Email" value={user?.email || "—"} />
           <Row label="User ID" value={<span className="font-mono text-xs">{user?.id}</span>} />
           <div className="pt-3">

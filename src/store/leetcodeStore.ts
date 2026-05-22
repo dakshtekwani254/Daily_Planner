@@ -36,35 +36,25 @@ export const useLeetcodeStore = create<LeetcodeState>((set, get) => ({
   },
 
   addEntry: async (entry, userId) => {
-    const tempId = `temp-${Date.now()}`;
-    const newEntry: LeetCodeEntry = {
-      id: tempId,
-      user_id: userId,
-      problem_name: entry.problem_name,
-      difficulty: entry.difficulty ?? 'Medium',
-      topic: entry.topic ?? 'Arrays',
-      created_at: new Date().toISOString(),
-      solved_at: entry.solved_at ?? new Date().toISOString().split('T')[0],
-      needs_revision: entry.needs_revision ?? false,
-      notes: entry.notes ?? null,
-      url: entry.url ?? null,
-    };
-    
-    set((state) => ({ entries: [newEntry, ...state.entries] }));
-
     const { data, error } = await supabase
       .from('leetcode_entries')
-      .insert({ ...entry, user_id: userId })
+      .insert({
+        ...entry,
+        user_id: userId,
+        difficulty: entry.difficulty ?? 'Medium',
+        topic: entry.topic ?? 'Arrays',
+        needs_revision: entry.needs_revision ?? false
+      })
       .select()
       .single();
 
     if (error) {
-      set((state) => ({ entries: state.entries.filter((e) => e.id !== tempId) }));
       throw error;
     } else {
-      set((state) => ({
-        entries: state.entries.map((e) => (e.id === tempId ? data : e)),
-      }));
+      set((state) => {
+        if (state.entries.find((e) => e.id === data.id)) return state;
+        return { entries: [data, ...state.entries] };
+      });
     }
   },
 
