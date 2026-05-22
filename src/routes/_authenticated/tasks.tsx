@@ -3,7 +3,7 @@ import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTaskStore } from "@/store/taskStore";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, MoreHorizontal, Settings2 } from "lucide-react";
+import { Plus, Trash2, MoreHorizontal, Settings2, Pencil } from "lucide-react";
 import { TaskDialog } from "@/components/task-dialog";
 import { TaskCategoryDialog } from "@/components/task-category-dialog";
 import { useTaskCategoryStore } from "@/store/taskCategoryStore";
@@ -33,6 +33,7 @@ function TasksPage() {
   const { tasks, initialized: tasksInit, fetchTasks, updateTask, deleteTask } = useTaskStore();
   const { categories, initialized: categoriesInit, fetchCategories } = useTaskCategoryStore();
   const [open, setOpen] = React.useState(false);
+  const [editingTask, setEditingTask] = React.useState<any>(null);
   const [categoriesOpen, setCategoriesOpen] = React.useState(false);
   const [filter, setFilter] = React.useState<string>("All");
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -110,7 +111,12 @@ function TasksPage() {
             <Column key={col.id} id={col.id} label={col.label} count={col.items.length}>
               <AnimatePresence>
                 {col.items.map((t) => (
-                  <KanbanCard key={t.id} task={t} onDelete={() => handleDelete(t.id)} />
+                  <KanbanCard 
+                    key={t.id} 
+                    task={t} 
+                    onEdit={() => { setEditingTask(t); setOpen(true); }}
+                    onDelete={() => handleDelete(t.id)} 
+                  />
                 ))}
               </AnimatePresence>
               {col.items.length === 0 && (
@@ -122,11 +128,15 @@ function TasksPage() {
           ))}
         </div>
         <DragOverlay>
-          {activeTask && <KanbanCard task={activeTask} onDelete={() => {}} dragging />}
+          {activeTask && <KanbanCard task={activeTask} onEdit={() => {}} onDelete={() => {}} dragging />}
         </DragOverlay>
       </DndContext>
 
-      <TaskDialog open={open} onOpenChange={setOpen} />
+      <TaskDialog 
+        open={open} 
+        onOpenChange={(v) => { setOpen(v); if (!v) setEditingTask(null); }} 
+        editTask={editingTask} 
+      />
       <TaskCategoryDialog open={categoriesOpen} onOpenChange={setCategoriesOpen} />
     </div>
   );
@@ -145,7 +155,7 @@ function Column({ id, label, count, children }: { id: string; label: string; cou
   );
 }
 
-function KanbanCard({ task, onDelete, dragging }: { task: any; onDelete: () => void; dragging?: boolean }) {
+function KanbanCard({ task, onEdit, onDelete, dragging }: { task: any; onEdit: () => void; onDelete: () => void; dragging?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id });
   
   return (
@@ -171,6 +181,9 @@ function KanbanCard({ task, onDelete, dragging }: { task: any; onDelete: () => v
             <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"><MoreHorizontal className="h-4 w-4" /></button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="border-border-strong bg-popover">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+              <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive">
               <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
             </DropdownMenuItem>

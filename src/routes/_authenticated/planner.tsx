@@ -41,7 +41,7 @@ function PlannerPage() {
     }
   };
 
-  const hours = Array.from({ length: 18 }, (_, i) => i + 6); // 6 AM - 11 PM
+  const hours = Array.from({ length: 24 }, (_, i) => i); // 12 AM - 11 PM
   const byHour = new Map<number, typeof tasks>();
   
   tasks.forEach((t) => {

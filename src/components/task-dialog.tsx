@@ -22,11 +22,12 @@ type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultDate?: Date;
+  editTask?: any;
 };
 
-export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
+export function TaskDialog({ open, onOpenChange, defaultDate, editTask }: Props) {
   const { user } = useAuth();
-  const { addTask, tasks } = useTaskStore();
+  const { addTask, updateTask, tasks } = useTaskStore();
   const { categories: customCategories } = useTaskCategoryStore();
   
   const allCategories = React.useMemo(() => {
@@ -49,15 +50,33 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
 
   React.useEffect(() => {
     if (open) {
-      setTitle(""); setNotes(""); setCategory(allCategories[0] || "");
-      setIsCreatingCategory(false);
-      setPriority("medium"); setEstimated("");
-      setScheduledFor(defaultDate ? toLocalInput(defaultDate) : "");
-      setDueDate("");
-      setIsRecurring(false);
-      setRecurrenceRule("");
+      if (editTask) {
+        setTitle(editTask.title || "");
+        setNotes(editTask.notes || "");
+        setCategory(editTask.category || allCategories[0] || "");
+        setIsCreatingCategory(false);
+        setPriority(editTask.priority || "medium");
+        setEstimated(editTask.estimated_minutes ? String(editTask.estimated_minutes) : "");
+        setScheduledFor(editTask.scheduled_for ? toLocalInput(new Date(editTask.scheduled_for)) : "");
+        setDueDate(editTask.due_date ? toLocalInput(new Date(editTask.due_date)) : "");
+        setIsRecurring(editTask.is_recurring || false);
+        setRecurrenceRule(editTask.recurrence_rule || "");
+      } else {
+        setTitle(""); setNotes(""); setCategory(allCategories[0] || "");
+        setIsCreatingCategory(false);
+        setPriority("medium"); setEstimated("");
+        
+        // Default to current time if no defaultDate is provided so it appears in Daily Planner
+        const now = new Date();
+        now.setMinutes(0, 0, 0);
+        setScheduledFor(defaultDate ? toLocalInput(defaultDate) : toLocalInput(now));
+        
+        setDueDate("");
+        setIsRecurring(false);
+        setRecurrenceRule("");
+      }
     }
-  }, [open, defaultDate, allCategories]);
+  }, [open, defaultDate, allCategories, editTask]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +84,7 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
     
     setIsPending(true);
     try {
-      await addTask({
+      const taskData = {
         title,
         notes: notes || null,
         category,
@@ -73,12 +92,18 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
         estimated_minutes: estimated ? Number(estimated) : null,
         scheduled_for: scheduledFor ? new Date(scheduledFor).toISOString() : null,
         due_date: dueDate ? new Date(dueDate).toISOString() : null,
-        status: "todo",
         is_recurring: isRecurring,
         recurrence_rule: isRecurring ? recurrenceRule : null,
-      }, user.id);
+      };
+
+      if (editTask) {
+        await updateTask(editTask.id, taskData);
+        toast.success("Task updated");
+      } else {
+        await addTask({ ...taskData, status: "todo" }, user.id);
+        toast.success("Task created");
+      }
       
-      toast.success("Task created");
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || "Failed to create task");
@@ -91,7 +116,7 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg border-border-strong bg-popover">
         <DialogHeader>
-          <DialogTitle>New task</DialogTitle>
+          <DialogTitle>{editTask ? "Edit task" : "New task"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -187,7 +212,7 @@ export function TaskDialog({ open, onOpenChange, defaultDate }: Props) {
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isPending || !title.trim()}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create task
+              {editTask ? "Save changes" : "Create task"}
             </Button>
           </DialogFooter>
         </form>
