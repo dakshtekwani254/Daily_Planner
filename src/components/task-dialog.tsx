@@ -45,8 +45,18 @@ export function TaskDialog({ open, onOpenChange, defaultDate, editTask }: Props)
   const [scheduledFor, setScheduledFor] = React.useState<string>("");
   const [dueDate, setDueDate] = React.useState<string>("");
   const [isRecurring, setIsRecurring] = React.useState(false);
-  const [recurrenceRule, setRecurrenceRule] = React.useState<string>("");
+  const [selectedDays, setSelectedDays] = React.useState<string[]>([]);
   const [isPending, setIsPending] = React.useState(false);
+
+  const DAYS = [
+    { value: "SU", label: "S" },
+    { value: "MO", label: "M" },
+    { value: "TU", label: "T" },
+    { value: "WE", label: "W" },
+    { value: "TH", label: "T" },
+    { value: "FR", label: "F" },
+    { value: "SA", label: "S" },
+  ];
 
   React.useEffect(() => {
     if (open) {
@@ -60,7 +70,12 @@ export function TaskDialog({ open, onOpenChange, defaultDate, editTask }: Props)
         setScheduledFor(editTask.scheduled_for ? toLocalInput(new Date(editTask.scheduled_for)) : "");
         setDueDate(editTask.due_date ? toLocalInput(new Date(editTask.due_date)) : "");
         setIsRecurring(editTask.is_recurring || false);
-        setRecurrenceRule(editTask.recurrence_rule || "");
+        if (editTask.recurrence_rule?.includes("BYDAY=")) {
+          const daysStr = editTask.recurrence_rule.split("BYDAY=")[1].split(";")[0];
+          setSelectedDays(daysStr.split(","));
+        } else {
+          setSelectedDays([]);
+        }
       } else {
         setTitle(""); setNotes(""); setCategory(allCategories[0] || "");
         setIsCreatingCategory(false);
@@ -73,14 +88,14 @@ export function TaskDialog({ open, onOpenChange, defaultDate, editTask }: Props)
         
         setDueDate("");
         setIsRecurring(false);
-        setRecurrenceRule("");
+        setSelectedDays([]);
       }
     }
   }, [open, defaultDate, allCategories, editTask]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !user) return;
+    if (!title.trim() || !user || (isRecurring && selectedDays.length === 0)) return;
     
     setIsPending(true);
     try {
@@ -92,8 +107,8 @@ export function TaskDialog({ open, onOpenChange, defaultDate, editTask }: Props)
         estimated_minutes: estimated ? Number(estimated) : null,
         scheduled_for: scheduledFor ? new Date(scheduledFor).toISOString() : null,
         due_date: dueDate ? new Date(dueDate).toISOString() : null,
-        is_recurring: isRecurring,
-        recurrence_rule: isRecurring ? recurrenceRule : null,
+        is_recurring: isRecurring && selectedDays.length > 0,
+        recurrence_rule: isRecurring && selectedDays.length > 0 ? `FREQ=WEEKLY;BYDAY=${selectedDays.join(",")}` : null,
       };
 
       if (editTask) {
@@ -196,21 +211,32 @@ export function TaskDialog({ open, onOpenChange, defaultDate, editTask }: Props)
             <Label htmlFor="recurring" className="font-normal text-sm">Make this task recurring</Label>
           </div>
           {isRecurring && (
-            <div className="space-y-1.5">
-              <Label>Recurrence Rule</Label>
-              <Select value={recurrenceRule} onValueChange={setRecurrenceRule}>
-                <SelectTrigger><SelectValue placeholder="Select frequency" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FREQ=DAILY">Daily</SelectItem>
-                  <SelectItem value="FREQ=WEEKLY">Weekly</SelectItem>
-                  <SelectItem value="FREQ=MONTHLY">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <Label>Repeat on</Label>
+              <div className="flex justify-between gap-1">
+                {DAYS.map((d) => {
+                  const isSelected = selectedDays.includes(d.value);
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDays(prev => 
+                          isSelected ? prev.filter(v => v !== d.value) : [...prev, d.value]
+                        );
+                      }}
+                      className={`h-9 w-9 rounded-full text-sm font-medium transition-colors ${isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={isPending || !title.trim()}>
+            <Button type="submit" disabled={isPending || !title.trim() || (isRecurring && selectedDays.length === 0)}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editTask ? "Save changes" : "Create task"}
             </Button>

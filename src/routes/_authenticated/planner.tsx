@@ -56,7 +56,11 @@ function PlannerPage() {
     if (t.scheduled_for >= dayStart && t.scheduled_for <= dayEnd) {
       shouldRender = true;
     } else if (t.status !== "done" && t.is_recurring && t.recurrence_rule && taskDayStart < plannerDayStart) {
-      if (t.recurrence_rule === "FREQ=DAILY") {
+      if (t.recurrence_rule.includes("BYDAY=")) {
+        const daysMap = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+        const byDayStr = t.recurrence_rule.split("BYDAY=")[1].split(";")[0];
+        shouldRender = byDayStr.includes(daysMap[plannerDayStart.getDay()]);
+      } else if (t.recurrence_rule === "FREQ=DAILY") {
         shouldRender = true;
       } else if (t.recurrence_rule === "FREQ=WEEKLY") {
         shouldRender = plannerDayStart.getDay() === taskDayStart.getDay();

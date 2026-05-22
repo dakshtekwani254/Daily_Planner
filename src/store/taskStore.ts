@@ -86,7 +86,21 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       let nextScheduled = task.scheduled_for ? new Date(task.scheduled_for) : null;
       let nextDue = task.due_date ? new Date(task.due_date) : null;
 
-      if (task.recurrence_rule === 'FREQ=DAILY') {
+      if (task.recurrence_rule?.includes('BYDAY=')) {
+        const daysMap = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+        const byDayStr = task.recurrence_rule.split("BYDAY=")[1].split(";")[0].split(",");
+        let limit = 7;
+        while(limit > 0) {
+          if (nextScheduled) nextScheduled = addDays(nextScheduled, 1);
+          if (nextDue) nextDue = addDays(nextDue, 1);
+          
+          const checkDate = nextScheduled || nextDue || addDays(new Date(), 1);
+          if (byDayStr.includes(daysMap[checkDate.getDay()])) {
+            break;
+          }
+          limit--;
+        }
+      } else if (task.recurrence_rule === 'FREQ=DAILY') {
         if (nextScheduled) nextScheduled = addDays(nextScheduled, 1);
         if (nextDue) nextDue = addDays(nextDue, 1);
       } else if (task.recurrence_rule === 'FREQ=WEEKLY') {
