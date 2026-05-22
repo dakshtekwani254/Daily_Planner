@@ -1,13 +1,14 @@
 {
   "outputDirectory": "dist/client",
-  "builds": [
-    { "src": "dist/client/**", "use": "@vercel/static" },
-    { "src": "api/index.js", "use": "@vercel/node" }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/api/index.js"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "dist/server/**"
+    }
+  }
 }
