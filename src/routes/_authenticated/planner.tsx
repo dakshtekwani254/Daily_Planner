@@ -109,21 +109,28 @@ function PlannerPage() {
                   </span>
                 ) : (
                   <AnimatePresence>
-                    {items.map((t) => (
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        key={t.id}
-                        onClick={(e) => { e.stopPropagation(); handleToggle(t.id, t.status); }}
-                        className={`flex w-full items-center gap-2 rounded-md border border-border-strong/60 bg-gradient-to-r from-primary/10 to-accent/5 px-2.5 py-1.5 text-sm ${t.status === "done" ? "opacity-50 line-through" : ""}`}
-                      >
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                        <span className="flex-1 truncate">{t.title}</span>
-                        <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">{t.category}</span>
-                      </motion.div>
-                    ))}
+                    {items.map((t) => {
+                      let colors = { bg: "from-primary/10 to-accent/5", dot: "bg-primary", border: "border-border-strong/60" };
+                      if (t.priority === "low") colors = { bg: "from-slate-500/10 to-slate-500/5", dot: "bg-slate-500", border: "border-slate-500/20" };
+                      else if (t.priority === "high") colors = { bg: "from-yellow-500/10 to-yellow-500/5", dot: "bg-yellow-500", border: "border-yellow-500/20" };
+                      else if (t.priority === "urgent") colors = { bg: "from-red-500/10 to-red-500/5", dot: "bg-red-500", border: "border-red-500/20" };
+
+                      return (
+                        <motion.div
+                          layout
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          key={t.id}
+                          onClick={(e) => { e.stopPropagation(); handleToggle(t.id, t.status); }}
+                          className={`flex w-full items-center gap-2 rounded-md border ${colors.border} bg-gradient-to-r ${colors.bg} px-2.5 py-1.5 text-sm ${t.status === "done" ? "opacity-50 line-through" : ""}`}
+                        >
+                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors.dot}`} />
+                          <span className="flex-1 truncate">{t.title}</span>
+                          <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">{t.category}</span>
+                        </motion.div>
+                      );
+                    })}
                   </AnimatePresence>
                 )}
               </button>
