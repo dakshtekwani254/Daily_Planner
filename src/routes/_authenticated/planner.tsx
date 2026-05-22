@@ -1,0 +1,115 @@
+import { createFileRoute } from "@tanstack/react-router";
+import * as React from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useTaskStore } from "@/store/taskStore";
+import { addDays, format, startOfDay, endOfDay, subDays } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { TaskDialog } from "@/components/task-dialog";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+
+export const Route = createFileRoute("/_authenticated/planner")({
+  component: PlannerPage,
+});
+
+function PlannerPage() {
+  const { user } = useAuth();
+  const { tasks, initialized, fetchTasks, updateTask } = useTaskStore();
+  const [day, setDay] = React.useState(new Date());
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [defaultTime, setDefaultTime] = React.useState<Date | undefined>(undefined);
+
+  React.useEffect(() => {
+    if (user && !initialized) {
+      fetchTasks(user.id);
+    }
+  }, [user, initialized, fetchTasks]);
+
+  const dayStart = startOfDay(day).toISOString();
+  const dayEnd = endOfDay(day).toISOString();
+
+  const handleToggle = async (id: string, status: string) => {
+    const newStatus = status === "done" ? "todo" : "done";
+    try {
+      await updateTask(id, {
+        status: newStatus,
+        completed_at: newStatus === "done" ? new Date().toISOString() : null
+      });
+    } catch (e) {
+      toast.error("Failed to update task");
+    }
+  };
+
+  const hours = Array.from({ length: 18 }, (_, i) => i + 6); // 6 AM - 11 PM
+  const byHour = new Map<number, typeof tasks>();
+  
+  tasks.forEach((t) => {
+    if (!t.scheduled_for) return;
+    if (t.scheduled_for < dayStart || t.scheduled_for > dayEnd) return;
+    
+    const h = new Date(t.scheduled_for).getHours();
+    if (!byHour.has(h)) byHour.set(h, []);
+    byHour.get(h)!.push(t);
+  });
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 py-8">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Daily Planner</h1>
+          <p className="text-sm text-muted-foreground">Time-block your way to flow.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="icon" variant="ghost" onClick={() => setDay(subDays(day, 1))}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" onClick={() => setDay(new Date())} className="font-medium">{format(day, "EEE, MMM d")}</Button>
+          <Button size="icon" variant="ghost" onClick={() => setDay(addDays(day, 1))}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+      </header>
+
+      <div className="card-elevated overflow-hidden">
+        {hours.map((h) => {
+          const items = byHour.get(h) ?? [];
+          const slot = new Date(day); slot.setHours(h, 0, 0, 0);
+          return (
+            <div key={h} className="group flex border-b border-border last:border-0">
+              <div className="w-16 shrink-0 border-r border-border px-3 py-3 text-xs text-muted-foreground tabular-nums">
+                {format(slot, "HH:mm")}
+              </div>
+              <button
+                onClick={() => { setDefaultTime(slot); setDialogOpen(true); }}
+                className="flex min-h-[56px] flex-1 flex-col gap-1.5 px-3 py-2 text-left transition-colors hover:bg-surface/60"
+              >
+                {items.length === 0 ? (
+                  <span className="hidden text-xs text-muted-foreground group-hover:flex items-center gap-1">
+                    <Plus className="h-3 w-3" /> Add block
+                  </span>
+                ) : (
+                  <AnimatePresence>
+                    {items.map((t) => (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        key={t.id}
+                        onClick={(e) => { e.stopPropagation(); handleToggle(t.id, t.status); }}
+                        className={`flex w-full items-center gap-2 rounded-md border border-border-strong/60 bg-gradient-to-r from-primary/10 to-accent/5 px-2.5 py-1.5 text-sm ${t.status === "done" ? "opacity-50 line-through" : ""}`}
+                      >
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                        <span className="flex-1 truncate">{t.title}</span>
+                        <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">{t.category}</span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <TaskDialog open={dialogOpen} onOpenChange={setDialogOpen} defaultDate={defaultTime} />
+    </div>
+  );
+}
