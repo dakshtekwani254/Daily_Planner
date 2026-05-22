@@ -55,7 +55,7 @@ function PlannerPage() {
 
     if (t.scheduled_for >= dayStart && t.scheduled_for <= dayEnd) {
       shouldRender = true;
-    } else if (t.is_recurring && t.recurrence_rule && taskDayStart < plannerDayStart) {
+    } else if (t.status !== "done" && t.is_recurring && t.recurrence_rule && taskDayStart < plannerDayStart) {
       if (t.recurrence_rule === "FREQ=DAILY") {
         shouldRender = true;
       } else if (t.recurrence_rule === "FREQ=WEEKLY") {
