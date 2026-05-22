@@ -9,7 +9,15 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Sparkles, Loader2 } from "lucide-react";
 
+import { getServerSession } from "@/integrations/supabase/auth";
+
 export const Route = createFileRoute("/login")({
+  beforeLoad: async () => {
+    const session = await getServerSession();
+    if (session) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: LoginPage,
 });
 

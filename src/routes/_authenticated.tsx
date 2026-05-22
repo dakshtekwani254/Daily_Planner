@@ -11,7 +11,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { TaskDialog } from "@/components/task-dialog";
 
+import { getServerSession } from "@/integrations/supabase/auth";
+
 export const Route = createFileRoute("/_authenticated")({
+  beforeLoad: async () => {
+    const session = await getServerSession();
+    if (!session) {
+      throw redirect({ to: "/login" });
+    }
+  },
   component: AuthenticatedLayout,
 });
 
