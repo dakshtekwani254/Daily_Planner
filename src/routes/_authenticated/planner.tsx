@@ -46,9 +46,28 @@ function PlannerPage() {
   
   tasks.forEach((t) => {
     if (!t.scheduled_for) return;
-    if (t.scheduled_for < dayStart || t.scheduled_for > dayEnd) return;
     
-    const h = new Date(t.scheduled_for).getHours();
+    const taskDate = new Date(t.scheduled_for);
+    const plannerDayStart = startOfDay(day);
+    const taskDayStart = startOfDay(taskDate);
+
+    let shouldRender = false;
+
+    if (t.scheduled_for >= dayStart && t.scheduled_for <= dayEnd) {
+      shouldRender = true;
+    } else if (t.is_recurring && t.recurrence_rule && taskDayStart < plannerDayStart) {
+      if (t.recurrence_rule === "FREQ=DAILY") {
+        shouldRender = true;
+      } else if (t.recurrence_rule === "FREQ=WEEKLY") {
+        shouldRender = plannerDayStart.getDay() === taskDayStart.getDay();
+      } else if (t.recurrence_rule === "FREQ=MONTHLY") {
+        shouldRender = plannerDayStart.getDate() === taskDayStart.getDate();
+      }
+    }
+
+    if (!shouldRender) return;
+    
+    const h = taskDate.getHours();
     if (!byHour.has(h)) byHour.set(h, []);
     byHour.get(h)!.push(t);
   });
