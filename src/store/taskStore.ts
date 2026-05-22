@@ -83,14 +83,22 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
     // Recurring logic
     if (updates.status === 'done' && task.status !== 'done' && task.is_recurring && task.recurrence_rule) {
-      let nextDate = new Date();
-      if (task.due_date) nextDate = new Date(task.due_date);
-      else if (task.scheduled_for) nextDate = new Date(task.scheduled_for);
+      let nextScheduled = task.scheduled_for ? new Date(task.scheduled_for) : null;
+      let nextDue = task.due_date ? new Date(task.due_date) : null;
 
-      if (task.recurrence_rule === 'FREQ=DAILY') nextDate = addDays(nextDate, 1);
-      else if (task.recurrence_rule === 'FREQ=WEEKLY') nextDate = addWeeks(nextDate, 1);
-      else if (task.recurrence_rule === 'FREQ=MONTHLY') nextDate = addMonths(nextDate, 1);
-      else nextDate = addDays(nextDate, 1);
+      if (task.recurrence_rule === 'FREQ=DAILY') {
+        if (nextScheduled) nextScheduled = addDays(nextScheduled, 1);
+        if (nextDue) nextDue = addDays(nextDue, 1);
+      } else if (task.recurrence_rule === 'FREQ=WEEKLY') {
+        if (nextScheduled) nextScheduled = addWeeks(nextScheduled, 1);
+        if (nextDue) nextDue = addWeeks(nextDue, 1);
+      } else if (task.recurrence_rule === 'FREQ=MONTHLY') {
+        if (nextScheduled) nextScheduled = addMonths(nextScheduled, 1);
+        if (nextDue) nextDue = addMonths(nextDue, 1);
+      } else {
+        if (nextScheduled) nextScheduled = addDays(nextScheduled, 1);
+        if (nextDue) nextDue = addDays(nextDue, 1);
+      }
 
       const nextTask = {
         title: task.title,
@@ -104,8 +112,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         is_recurring: true,
         recurrence_rule: task.recurrence_rule,
         user_id: task.user_id,
-        scheduled_for: task.scheduled_for ? nextDate.toISOString() : null,
-        due_date: task.due_date ? nextDate.toISOString() : null,
+        scheduled_for: nextScheduled ? nextScheduled.toISOString() : null,
+        due_date: nextDue ? nextDue.toISOString() : null,
       };
 
       const { data: newRec } = await supabase.from('tasks').insert(nextTask).select().single();
