@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/analytics")({
   component: AnalyticsPage,
 });
 
-const CAT_COLORS = ["oklch(0.72 0.16 250)", "oklch(0.68 0.17 295)", "oklch(0.72 0.16 160)", "oklch(0.78 0.16 80)", "oklch(0.65 0.22 25)", "oklch(0.62 0.14 200)", "oklch(0.7 0.1 320)"];
+const CAT_COLORS = ["var(--primary)", "var(--accent)", "oklch(0.72 0.16 160)", "oklch(0.78 0.16 80)", "oklch(0.65 0.22 25)", "oklch(0.62 0.14 200)", "oklch(0.7 0.1 320)"];
 
 function AnalyticsPage() {
   const { user } = useAuth();
@@ -79,14 +79,14 @@ function AnalyticsPage() {
             <AreaChart data={focusByDay}>
               <defs>
                 <linearGradient id="fg" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="oklch(0.72 0.16 250)" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="oklch(0.72 0.16 250)" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="day" stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={tipStyle} formatter={(v: number) => [`${v}h`, "Focus"]} />
-              <Area type="monotone" dataKey="hours" stroke="oklch(0.72 0.16 250)" strokeWidth={2} fill="url(#fg)" />
+              <Area type="monotone" dataKey="hours" stroke="var(--primary)" strokeWidth={2} fill="url(#fg)" />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -97,8 +97,8 @@ function AnalyticsPage() {
               <XAxis dataKey="day" stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={tipStyle} />
-              <Bar dataKey="created" fill="oklch(0.68 0.17 295 / 0.6)" radius={[4,4,0,0]} />
-              <Bar dataKey="done" fill="oklch(0.72 0.16 250)" radius={[4,4,0,0]} />
+              <Bar dataKey="created" fill="oklch(var(--accent-raw) / 0.6)" radius={[4,4,0,0]} />
+              <Bar dataKey="done" fill="var(--primary)" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -159,7 +159,7 @@ function FocusHeat({ sessions }: { sessions: { started_at: string; actual_second
         const intensity = Math.min(1, v / max);
         return (
           <div key={h} className="flex flex-col items-center gap-1">
-            <div className="h-12 w-full rounded-sm transition-all duration-300" style={{ background: `oklch(0.72 0.16 250 / ${0.08 + intensity * 0.9})` }} title={`${h}:00 · ${v.toFixed(0)}m`} />
+            <div className="h-12 w-full rounded-sm transition-all duration-300" style={{ background: `oklch(var(--primary-raw) / ${0.08 + intensity * 0.9})` }} title={`${h}:00 · ${v.toFixed(0)}m`} />
             {h % 3 === 0 && <span className="text-[9px] text-muted-foreground">{h}</span>}
           </div>
         );

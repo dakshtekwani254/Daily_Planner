@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
+import { useEffect } from "react";
+import { useThemeStore } from "@/store/themeStore";
 
 import appCss from "../styles.css?url";
 
@@ -72,6 +74,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "theme-color", content: "#0B0B0C" },
     ],
     links: [
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -86,9 +89,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark theme-midnight-blue">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: `
+          try {
+            var store = localStorage.getItem('theme-storage');
+            if (store) {
+              var theme = JSON.parse(store).state.theme;
+              document.documentElement.classList.remove('theme-midnight-blue');
+              document.documentElement.classList.add('theme-' + theme);
+            }
+          } catch (e) {}
+        `}} />
       </head>
       <body>
         {children}
@@ -100,6 +113,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const theme = useThemeStore((state) => state.theme);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('theme-midnight-blue', 'theme-emerald-green', 'theme-crimson-red', 'theme-golden-yellow');
+    root.classList.add(`theme-${theme}`);
+  }, [theme]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

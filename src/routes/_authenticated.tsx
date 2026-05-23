@@ -84,16 +84,19 @@ function AuthenticatedLayout() {
         "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:flex",
         collapsed ? "w-[68px]" : "w-[240px]"
       )}>
-        <div className="flex h-14 items-center gap-2 px-3">
-          <div className="grid h-8 w-8 place-items-center rounded-md bg-primary/10 ring-1 ring-primary/30">
+        <div className={cn("relative flex h-14 items-center", collapsed ? "justify-center" : "gap-2 px-3")}>
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary/10 ring-1 ring-primary/30">
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
-          {!collapsed && <span className="font-semibold tracking-tight">Planner OS</span>}
+          {!collapsed && <span className="font-semibold tracking-tight truncate">Planner OS</span>}
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="ml-auto hidden rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground md:inline-flex"
+            className={cn(
+              "absolute -right-3 top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm hover:bg-sidebar-accent hover:text-foreground md:flex transition-transform duration-200",
+              collapsed && "rotate-180"
+            )}
           >
-            <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
+            <ChevronLeft className="h-3 w-3" />
           </button>
         </div>
 

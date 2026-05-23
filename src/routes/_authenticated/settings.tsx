@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useThemeStore } from "@/store/themeStore";
 import { LogOut, Keyboard, Bell, User, Palette, Check, X, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,6 +15,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const { user, signOut } = useAuth();
+  const theme = useThemeStore((state) => state.theme);
+  const setTheme = useThemeStore((state) => state.setTheme);
 
   const [isEditing, setIsEditing] = React.useState(false);
   const [nameInput, setNameInput] = React.useState(user?.user_metadata?.full_name || "");
@@ -85,8 +89,21 @@ function SettingsPage() {
         </Section>
 
         <Section icon={Palette} title="Appearance">
-          <Row label="Theme" value="Dark · Midnight" />
-          <Row label="Accent" value={<span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-primary" /> Electric blue</span>} />
+          <div className="flex items-center justify-between gap-3 border-b border-border py-2 last:border-0">
+            <span className="text-sm text-muted-foreground">Theme</span>
+            <Select value={theme} onValueChange={(val: any) => setTheme(val)}>
+              <SelectTrigger className="w-[180px] h-8 text-sm">
+                <SelectValue placeholder="Select a theme" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="midnight-blue">Midnight Blue</SelectItem>
+                <SelectItem value="emerald-green">Emerald Green</SelectItem>
+                <SelectItem value="crimson-red">Crimson Red</SelectItem>
+                <SelectItem value="golden-yellow">Golden Yellow</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Row label="Accent" value={<span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-primary" /> Dynamic</span>} />
         </Section>
 
         <Section icon={Keyboard} title="Keyboard shortcuts">

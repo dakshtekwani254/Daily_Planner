@@ -129,8 +129,8 @@ function Dashboard() {
               <AreaChart data={weekData} margin={{ left: 0, right: 0, top: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="oklch(0.72 0.16 250)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="oklch(0.72 0.16 250)" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="day" stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
@@ -139,7 +139,7 @@ function Dashboard() {
                   labelStyle={{ color: "#fff" }}
                   formatter={(v: number) => [`${v.toFixed(1)}h`, "Focus"]}
                 />
-                <Area type="monotone" dataKey="hours" stroke="oklch(0.72 0.16 250)" strokeWidth={2} fill="url(#g1)" />
+                <Area type="monotone" dataKey="hours" stroke="var(--primary)" strokeWidth={2} fill="url(#g1)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

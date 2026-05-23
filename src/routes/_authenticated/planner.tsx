@@ -110,7 +110,7 @@ function PlannerPage() {
                 ) : (
                   <AnimatePresence>
                     {items.map((t) => {
-                      let colors = { bg: "from-primary/10 to-accent/5", dot: "bg-primary", border: "border-border-strong/60" };
+                      let colors = { bg: "from-blue-500/10 to-blue-500/5", dot: "bg-blue-500", border: "border-blue-500/20" };
                       if (t.priority === "low") colors = { bg: "from-emerald-500/10 to-emerald-500/5", dot: "bg-emerald-500", border: "border-emerald-500/20" };
                       else if (t.priority === "high") colors = { bg: "from-yellow-500/10 to-yellow-500/5", dot: "bg-yellow-500", border: "border-yellow-500/20" };
                       else if (t.priority === "urgent") colors = { bg: "from-red-500/10 to-red-500/5", dot: "bg-red-500", border: "border-red-500/20" };
