@@ -6,7 +6,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, CalendarRange, CheckSquare, Timer, Code2, Kanban,
-  GraduationCap, BarChart3, Settings, Search, Sparkles, Plus, Bell, LogOut, ChevronLeft, FileText
+  GraduationCap, BarChart3, Settings, Search, Sparkles, Plus, Bell, LogOut, ChevronLeft, FileText, Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TaskDialog } from "@/components/task-dialog";
@@ -42,6 +42,7 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [collapsed, setCollapsed] = React.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [taskOpen, setTaskOpen] = React.useState(false);
 
@@ -80,9 +81,17 @@ function AuthenticatedLayout() {
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
+      {/* Mobile backdrop */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
       <aside className={cn(
-        "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:flex",
-        collapsed ? "w-[68px]" : "w-[240px]"
+        "fixed inset-y-0 left-0 z-50 flex h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 md:sticky md:top-0 md:z-0",
+        mobileMenuOpen ? "translate-x-0 shadow-xl" : "-translate-x-full md:translate-x-0 md:shadow-none",
+        collapsed ? "md:w-[68px] w-[240px]" : "w-[240px]"
       )}>
         <div className={cn("relative flex h-14 items-center", collapsed ? "justify-center" : "gap-2 px-3")}>
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary/10 ring-1 ring-primary/30">
@@ -108,6 +117,7 @@ function AuthenticatedLayout() {
               <Link
                 key={item.to}
                 to={item.to}
+                onClick={() => setMobileMenuOpen(false)}
                 className={cn(
                   "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
                   active
@@ -148,6 +158,14 @@ function AuthenticatedLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-4 backdrop-blur-xl md:px-6">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden h-9 w-9 shrink-0" 
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
           <button
             onClick={() => setPaletteOpen(true)}
             className="flex flex-1 items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-2 md:max-w-md"
